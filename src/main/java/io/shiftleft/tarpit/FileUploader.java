@@ -14,6 +14,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
+import org.apache.commons.io.FilenameUtils;
+
 import io.shiftleft.tarpit.util.Unzipper;
 
 /**
@@ -43,12 +45,13 @@ public class FileUploader extends HttpServlet {
 
     Part filePart = request.getPart("zipFile");
 
-    InputStream input = filePart.getInputStream();
-
-    File targetFile = new File(productSourceFolder + filePart.getSubmittedFileName());
+    String fileName = FilenameUtils.getName(filePart.getSubmittedFileName());
+    File targetFile = new File(productSourceFolder, fileName);
 
     targetFile.createNewFile();
     OutputStream out = new FileOutputStream(targetFile);
+
+    InputStream input = filePart.getInputStream();
 
     byte[] buffer = new byte[1024];
     int bytesRead;
