@@ -36,7 +36,6 @@ public class OrderProcessor extends HttpServlet {
   private PreparedStatement preparedStatement;
   private ResultSet resultSet;
 
-
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
@@ -57,6 +56,8 @@ public class OrderProcessor extends HttpServlet {
       String message = " Your Order was successfully processed. For Order status please verify on page : " +  verifyUri;
       emailService.sendMail(fromAddress, customerEmail, subject, message);
 
+      out.println(subject.replace(">", "&gt;").replace("<", "&lt;"));
+      out.println(message.replace(">", "&gt;").replace("<", "&lt;"));
     } catch (JsonGenerationException e) {
       e.printStackTrace();
     } catch (JsonMappingException e) {
@@ -79,7 +80,7 @@ public class OrderProcessor extends HttpServlet {
     try {
       // read from file, convert it to user class
       Order order = deserializer.readValue(request.getReader(), Order.class);
-      out.println(order);
+      out.println(order.toString());
     } catch (JsonGenerationException e) {
       e.printStackTrace();
     } catch (JsonMappingException e) {

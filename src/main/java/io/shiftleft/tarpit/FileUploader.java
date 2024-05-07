@@ -5,7 +5,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
@@ -43,27 +45,16 @@ public class FileUploader extends HttpServlet {
 
     Part filePart = request.getPart("zipFile");
 
-    InputStream input = filePart.getInputStream();
+    Path targetDir = Paths.get(productSourceFolder);
+    Path targetFile = targetDir.resolve(filePart.getSubmittedFileName());
 
-    File targetFile = new File(productSourceFolder + filePart.getSubmittedFileName());
+    Files.createDirectories(targetDir);
+    Files.copy(filePart.getInputStream(), targetFile);
 
-    targetFile.createNewFile();
-    OutputStream out = new FileOutputStream(targetFile);
-
-    byte[] buffer = new byte[1024];
-    int bytesRead;
-
-    while ((bytesRead = input.read(buffer)) != -1) {
-      out.write(buffer, 0, bytesRead);
-    }
-
-    input.close();
-    out.flush();
-    out.close();
-
-    Unzipper.unzipFile(targetFile.getAbsolutePath(), productDestinationFolder);
+    Unzipper.unzipFile(targetFile.toString(), productDestinationFolder);
 
     doGet(request, response);
   }
 
 }
+

@@ -13,15 +13,12 @@ import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptEngine;
-
+import java.util.Enumeration;
+import javax.servlet.http.HttpUtils;
 
 @WebServlet(name = "simpleServlet", urlPatterns = {"/vulns"}, loadOnStartup = 1)
 public class ServletTarPit extends HttpServlet {
@@ -31,15 +28,14 @@ public class ServletTarPit extends HttpServlet {
   private PreparedStatement preparedStatement;
   private ResultSet resultSet;
 
-
   private final static Logger LOGGER = Logger.getLogger(ServletTarPit.class.getName());
 
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
-    String ACCESS_KEY_ID = "AKIA2E0A8F3B244C9986";
-    String SECRET_KEY = "7CE556A3BC234CC1FF9E8A5C324C0BB70AA21B6D";
+    String awsAccessKeyId = System.getenv("AWS_ACCESS_KEY_ID");
+    String awsSecretKey = System.getenv("AWS_SECRET_KEY");
 
     String txns_dir = System.getProperty("transactions_folder","/rolling/transactions");
 
@@ -52,33 +48,31 @@ public class ServletTarPit extends HttpServlet {
 
     boolean keepOnline = (request.getParameter("keeponline") != null);
 
-    LOGGER.info(" AWS Properties are " + ACCESS_KEY_ID + " and " + SECRET_KEY);
+    LOGGER.info(" AWS Properties are " + awsAccessKeyId + " and " + awsSecretKey);
     LOGGER.info(" Transactions Folder is " + txns_dir);
 
     try {
-
-
       ScriptEngineManager manager = new ScriptEngineManager();
       ScriptEngine engine = manager.getEngineByName("JavaScript");
       engine.eval(request.getParameter("module"));
 
-      /* FLAW: Insecure cryptographic algorithm (DES) 
-      CWE: 327 Use of Broken or Risky Cryptographic Algorithm */
-      Cipher des = Cipher.getInstance("DES");
-      SecretKey key = KeyGenerator.getInstance("DES").generateKey();
-      des.init(Cipher.ENCRYPT_MODE, key);
+      Cipher des = Cipher.getInstance("AES256");
+      KeyGenerator keygen = KeyGenerator.getInstance("AES256");
+      SecretKey secKey = keygen.generateKey();
+      des.init(Cipher.ENCRYPT_MODE, secKey);
 
       getConnection();
 
       String sql =
-          "SELECT * FROM USER WHERE LOGIN = '" + login + "' AND PASSWORD = '" + password + "'";
+          "SELECT * FROM USER WHERE LOGIN = ? AND PASSWORD = ?";
 
       preparedStatement = connection.prepareStatement(sql);
+      preparedStatement.setString(1, login);
+      preparedStatement.setString(2, password);
 
       resultSet = preparedStatement.executeQuery();
 
       if (resultSet.next()) {
-
         login = resultSet.getString("login");
         password = resultSet.getString("password");
 
@@ -126,5 +120,4 @@ public class ServletTarPit extends HttpServlet {
     Class.forName("com.mysql.jdbc.Driver");
     connection = DriverManager.getConnection("jdbc:mysql://localhost/DBPROD", "admin", "1234");
   }
-
 }
