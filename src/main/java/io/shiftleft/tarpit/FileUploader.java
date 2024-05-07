@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Paths;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -45,7 +46,13 @@ public class FileUploader extends HttpServlet {
 
     InputStream input = filePart.getInputStream();
 
-    File targetFile = new File(productSourceFolder + filePart.getSubmittedFileName());
+    // Validate the file name
+    String fileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
+    if (fileName.contains("..")) {
+      throw new IOException("Invalid file path");
+    }
+
+    File targetFile = new File(productSourceFolder, fileName);
 
     targetFile.createNewFile();
     OutputStream out = new FileOutputStream(targetFile);

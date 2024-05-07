@@ -31,21 +31,22 @@ public class ServletTarPit extends HttpServlet {
   private PreparedStatement preparedStatement;
   private ResultSet resultSet;
 
-
   private final static Logger LOGGER = Logger.getLogger(ServletTarPit.class.getName());
 
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
-    String ACCESS_KEY_ID = "AKIA2E0A8F3B244C9986";
-    String SECRET_KEY = "7CE556A3BC234CC1FF9E8A5C324C0BB70AA21B6D";
+    // Removed hardcoded credentials
+    String ACCESS_KEY_ID = System.getenv("ACCESS_KEY_ID");
+    String SECRET_KEY = System.getenv("SECRET_KEY");
 
     String txns_dir = System.getProperty("transactions_folder","/rolling/transactions");
 
-    String login = request.getParameter("login");
-    String password = request.getParameter("password");
-    String encodedPath = request.getParameter("encodedPath");
+    // Mitigate HTTP Request/Response Splitting
+    String login = request.getParameter("login").replaceAll("[\r\n]", "");
+    String password = request.getParameter("password").replaceAll("[\r\n]", "");
+    String encodedPath = request.getParameter("encodedPath").replaceAll("[\r\n]", "");
 
     String xxeDocumentContent = request.getParameter("entityDocument");
     DocumentTarpit.getDocument(xxeDocumentContent);
@@ -57,23 +58,26 @@ public class ServletTarPit extends HttpServlet {
 
     try {
 
-
+      // Mitigate Code Injection
       ScriptEngineManager manager = new ScriptEngineManager();
       ScriptEngine engine = manager.getEngineByName("JavaScript");
-      engine.eval(request.getParameter("module"));
+      // Do not evaluate untrusted input directly
+      // engine.eval(request.getParameter("module"));
 
-      /* FLAW: Insecure cryptographic algorithm (DES) 
-      CWE: 327 Use of Broken or Risky Cryptographic Algorithm */
-      Cipher des = Cipher.getInstance("DES");
-      SecretKey key = KeyGenerator.getInstance("DES").generateKey();
-      des.init(Cipher.ENCRYPT_MODE, key);
+      // Use a more secure cryptographic algorithm
+      Cipher aesCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+      KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+      keyGen.init(256); // for example
+      SecretKey key = keyGen.generateKey();
+      aesCipher.init(Cipher.ENCRYPT_MODE, key);
 
       getConnection();
 
-      String sql =
-          "SELECT * FROM USER WHERE LOGIN = '" + login + "' AND PASSWORD = '" + password + "'";
-
+      // Mitigate SQL Injection
+      String sql = "SELECT * FROM USER WHERE LOGIN = ? AND PASSWORD = ?";
       preparedStatement = connection.prepareStatement(sql);
+      preparedStatement.setString(1, login);
+      preparedStatement.setString(2, password);
 
       resultSet = preparedStatement.executeQuery();
 
@@ -91,11 +95,14 @@ public class ServletTarPit extends HttpServlet {
             resultSet.getString("zipCode"));
 
         String creditInfo = resultSet.getString("userCreditCardInfo");
-        byte[] cc_enc_str = des.doFinal(creditInfo.getBytes());
+        byte[] cc_enc_str = aesCipher.doFinal(creditInfo.getBytes());
 
         Cookie cookie = new Cookie("login", login);
         cookie.setMaxAge(864000);
         cookie.setPath("/");
+        // Set HttpOnly and Secure flags on the cookie
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
         response.addCookie(cookie);
 
         request.setAttribute("user", user.toString());
@@ -123,8 +130,11 @@ public class ServletTarPit extends HttpServlet {
   }
 
   private void getConnection() throws ClassNotFoundException, SQLException {
+    // Use environment variables or a secure configuration management system to retrieve credentials
+    String dbUser = System.getenv("DB_USER");
+    String dbPassword = System.getenv("DB_PASSWORD");
     Class.forName("com.mysql.jdbc.Driver");
-    connection = DriverManager.getConnection("jdbc:mysql://localhost/DBPROD", "admin", "1234");
+    connection = DriverManager.getConnection("jdbc:mysql://localhost/DBPROD", dbUser, dbPassword);
   }
 
 }

@@ -34,14 +34,14 @@ public class OrderStatus extends HttpServlet {
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
-    String orderId = request.getParameter("orderId");
+    String orderId = sanitizeInput(request.getParameter("orderId"));
 
     boolean keepOnline = (request.getParameter("keeponline") != null);
 
     try {
 
-      String theUser = request.getParameter("userId");
-      String thePassword = request.getParameter("password");
+      String theUser = sanitizeInput(request.getParameter("userId"));
+      String thePassword = sanitizeInput(request.getParameter("password"));
       request.setAttribute("callback", "/orderStatus.jsp");
 
       getServletContext().getRequestDispatcher("/login.jsp").forward(request, response);
@@ -52,8 +52,9 @@ public class OrderStatus extends HttpServlet {
 
         getConnection();
 
-        String sql = "SELECT * FROM ORDER WHERE ORDERID = '" + orderId;
+        String sql = "SELECT * FROM ORDER WHERE ORDERID = ?";
         preparedStatement = connection.prepareStatement(sql);
+        preparedStatement.setString(1, orderId);
 
         resultSet = preparedStatement.executeQuery();
 
@@ -76,6 +77,8 @@ public class OrderStatus extends HttpServlet {
           Cookie cookie = new Cookie("order", orderId);
           cookie.setMaxAge(864000);
           cookie.setPath("/");
+          cookie.setHttpOnly(true);
+          cookie.setSecure(true);
           response.addCookie(cookie);
 
           request.setAttribute("orderDetails", order);
@@ -108,6 +111,10 @@ public class OrderStatus extends HttpServlet {
   private void getConnection() throws ClassNotFoundException, SQLException {
     Class.forName("com.mysql.jdbc.Driver");
     connection = DriverManager.getConnection("jdbc:mysql://localhost/DBPROD", "admin", "1234");
+  }
+
+  private String sanitizeInput(String input) {
+    return input.replaceAll("(\r\n|\r|\n|\n\r)", "");
   }
 
 }
