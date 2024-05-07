@@ -19,6 +19,8 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @WebServlet(name = "simpleServlet", urlPatterns = {"/getOrderStatus"}, loadOnStartup = 1)
 public class OrderStatus extends HttpServlet {
@@ -52,9 +54,9 @@ public class OrderStatus extends HttpServlet {
 
         getConnection();
 
-        String sql = "SELECT * FROM ORDER WHERE ORDERID = '" + orderId;
+        String sql = "SELECT * FROM ORDER WHERE ORDERID = ?";
         preparedStatement = connection.prepareStatement(sql);
-
+        preparedStatement.setString(1, orderId);
         resultSet = preparedStatement.executeQuery();
 
         if (resultSet.next()) {
@@ -76,11 +78,13 @@ public class OrderStatus extends HttpServlet {
           Cookie cookie = new Cookie("order", orderId);
           cookie.setMaxAge(864000);
           cookie.setPath("/");
+          cookie.setSecure(true);
+          cookie.setHttpOnly(true);
           response.addCookie(cookie);
 
           request.setAttribute("orderDetails", order);
 
-          LOGGER.info("Order details are " + order);
+          LOGGER.info("Order details are " + URLEncoder.encode(order.toString(), StandardCharsets.UTF_8.toString()));
 
           getServletContext().getRequestDispatcher("/dashboard.jsp").forward(request, response);
 
@@ -88,7 +92,7 @@ public class OrderStatus extends HttpServlet {
 
           request.setAttribute("message", "Order does not exist");
 
-          LOGGER.info(" Order " + orderId + " does not exist ");
+          LOGGER.info(" Order " + URLEncoder.encode(orderId, StandardCharsets.UTF_8.toString()) + " does not exist ");
 
           getServletContext().getRequestDispatcher("/error.jsp").forward(request, response);
         }
