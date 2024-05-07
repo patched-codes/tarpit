@@ -1,7 +1,6 @@
 package io.shiftleft.tarpit;
 
 import io.shiftleft.tarpit.model.Order;
-import io.shiftleft.tarpit.model.User;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -52,8 +51,9 @@ public class OrderStatus extends HttpServlet {
 
         getConnection();
 
-        String sql = "SELECT * FROM ORDER WHERE ORDERID = '" + orderId;
+        String sql = "SELECT * FROM ORDER WHERE ORDERID = ?";
         preparedStatement = connection.prepareStatement(sql);
+        preparedStatement.setString(1, orderId);
 
         resultSet = preparedStatement.executeQuery();
 
@@ -101,7 +101,6 @@ public class OrderStatus extends HttpServlet {
     } catch (Exception e) {
       throw new ServletException(e);
     }
-
 
   }
 
