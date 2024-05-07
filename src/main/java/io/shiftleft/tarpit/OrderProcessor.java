@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.shiftleft.tarpit.model.Order;
+import org.apache.commons.text.StringEscapeUtils;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.ParseException;
@@ -25,7 +26,6 @@ import io.shiftleft.tarpit.util.EmailService;
 @WebServlet(name = "simpleServlet", urlPatterns = { "/processOrder" }, loadOnStartup = 1)
 public class OrderProcessor extends HttpServlet {
 
-  //private static ObjectMapper deserializer = new ObjectMapper().enableDefaultTyping();
   private static ObjectMapper deserializer = new ObjectMapper();
   private static ObjectMapper serializer = new ObjectMapper();
   private static String uri = "http://mycompany.com";
@@ -43,7 +43,7 @@ public class OrderProcessor extends HttpServlet {
     PrintWriter out = response.getWriter();
     try {
       Order customerOrder = Order.createOrder();
-      out.println(serializer.writeValueAsString(customerOrder));
+      out.println(StringEscapeUtils.escapeHtml4(serializer.writeValueAsString(customerOrder)));
 
       getConnection();
 
@@ -57,15 +57,7 @@ public class OrderProcessor extends HttpServlet {
       String message = " Your Order was successfully processed. For Order status please verify on page : " +  verifyUri;
       emailService.sendMail(fromAddress, customerEmail, subject, message);
 
-    } catch (JsonGenerationException e) {
-      e.printStackTrace();
-    } catch (JsonMappingException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (ParseException e) {
-      e.printStackTrace();
-    } catch (Exception e) {
+    } catch (JsonGenerationException | JsonMappingException | IOException | ParseException | SQLException | ClassNotFoundException e) {
       e.printStackTrace();
     }
     out.close();
@@ -77,14 +69,9 @@ public class OrderProcessor extends HttpServlet {
     PrintWriter out = response.getWriter();
 
     try {
-      // read from file, convert it to user class
       Order order = deserializer.readValue(request.getReader(), Order.class);
-      out.println(order);
-    } catch (JsonGenerationException e) {
-      e.printStackTrace();
-    } catch (JsonMappingException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
+      out.println(StringEscapeUtils.escapeHtml4(order.toString()));
+    } catch (JsonGenerationException | JsonMappingException | IOException e) {
       e.printStackTrace();
     }
     out.close();
@@ -94,5 +81,4 @@ public class OrderProcessor extends HttpServlet {
     Class.forName("com.mysql.jdbc.Driver");
     connection = DriverManager.getConnection("jdbc:mysql://localhost/DBPROD", "admin", "1234");
   }
-
 }
