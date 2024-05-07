@@ -9,7 +9,6 @@ import java.io.PrintWriter;
 import java.text.ParseException;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -19,8 +18,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Date;
-import io.shiftleft.tarpit.util.EmailService;
+import java.text.ParseException;
+import org.apache.commons.lang3.StringEscapeUtils;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 @WebServlet(name = "simpleServlet", urlPatterns = { "/processOrder" }, loadOnStartup = 1)
 public class OrderProcessor extends HttpServlet {
@@ -29,7 +29,7 @@ public class OrderProcessor extends HttpServlet {
   private static ObjectMapper deserializer = new ObjectMapper();
   private static ObjectMapper serializer = new ObjectMapper();
   private static String uri = "http://mycompany.com";
-  private EmailService emailService = new EmailService("smtp.mailtrap.io", 25, "87ba3d9555fae8", "91cb4379af43ed");
+  private EmailService emailService = new EmailService("smtp.mailtrap.io", 25, "87ba3d9555fafae8", "91cb4379af43ed");
   private String fromAddress = "orders@mycompany.com";
 
   private Connection connection;
@@ -40,10 +40,11 @@ public class OrderProcessor extends HttpServlet {
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
-    PrintWriter out = response.getWriter();
+    PrintWriter out = new PrintWriter(new HttpServletResponseWrapper(response).getWriter());
     try {
       Order customerOrder = Order.createOrder();
-      out.println(serializer.writeValueAsString(customerOrder));
+      String json = serializer.writeValueAsString(customerOrder);
+      out.println(StringEscapeUtils.escapeHtml4(json));
 
       getConnection();
 
@@ -74,12 +75,13 @@ public class OrderProcessor extends HttpServlet {
   protected void doPost(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
-    PrintWriter out = response.getWriter();
+    PrintWriter out = new PrintWriter(new HttpServletResponseWrapper(response).getWriter());
 
     try {
       // read from file, convert it to user class
       Order order = deserializer.readValue(request.getReader(), Order.class);
-      out.println(order);
+      String json = serializer.writeValueAsString(order);
+      out.println(StringEscapeUtils.escapeHtml4(json));
     } catch (JsonGenerationException e) {
       e.printStackTrace();
     } catch (JsonMappingException e) {
@@ -94,5 +96,16 @@ public class OrderProcessor extends HttpServlet {
     Class.forName("com.mysql.jdbc.Driver");
     connection = DriverManager.getConnection("jdbc:mysql://localhost/DBPROD", "admin", "1234");
   }
+}
 
+class HttpServletResponseWrapper extends HttpServletResponse {
+  private HttpServletResponse response;
+
+  public HttpServletResponseWrapper(HttpServletResponse response) {
+    this.response = response;
+  }
+
+  public PrintWriter getWriter() throws IOException {
+    return new PrintWriter(response.getWriter());
+  }
 }
