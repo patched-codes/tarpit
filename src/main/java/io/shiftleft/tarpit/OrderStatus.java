@@ -52,8 +52,9 @@ public class OrderStatus extends HttpServlet {
 
         getConnection();
 
-        String sql = "SELECT * FROM ORDER WHERE ORDERID = '" + orderId;
+        String sql = "SELECT * FROM ORDER WHERE ORDERID = ?";
         preparedStatement = connection.prepareStatement(sql);
+        preparedStatement.setString(1, orderId);
 
         resultSet = preparedStatement.executeQuery();
 
@@ -76,6 +77,8 @@ public class OrderStatus extends HttpServlet {
           Cookie cookie = new Cookie("order", orderId);
           cookie.setMaxAge(864000);
           cookie.setPath("/");
+          cookie.setSecure(true); // added
+          cookie.setHttpOnly(true); // added
           response.addCookie(cookie);
 
           request.setAttribute("orderDetails", order);
