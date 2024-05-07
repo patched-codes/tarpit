@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.apache.commons.io.FilenameUtils;
+
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
@@ -45,7 +47,8 @@ public class FileUploader extends HttpServlet {
 
     InputStream input = filePart.getInputStream();
 
-    File targetFile = new File(productSourceFolder + filePart.getSubmittedFileName());
+    String fileName = FilenameUtils.getName(filePart.getSubmittedFileName());
+    File targetFile = new File(productSourceFolder + fileName);
 
     targetFile.createNewFile();
     OutputStream out = new FileOutputStream(targetFile);
