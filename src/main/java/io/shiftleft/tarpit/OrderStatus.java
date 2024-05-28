@@ -52,8 +52,9 @@ public class OrderStatus extends HttpServlet {
 
         getConnection();
 
-        String sql = "SELECT * FROM ORDER WHERE ORDERID = '" + orderId;
+        String sql = "SELECT * FROM ORDER WHERE ORDERID = ?";
         preparedStatement = connection.prepareStatement(sql);
+        preparedStatement.setString(1, orderId);
 
         resultSet = preparedStatement.executeQuery();
 
@@ -76,6 +77,8 @@ public class OrderStatus extends HttpServlet {
           Cookie cookie = new Cookie("order", orderId);
           cookie.setMaxAge(864000);
           cookie.setPath("/");
+          cookie.setHttpOnly(true);
+          cookie.setSecure(true);
           response.addCookie(cookie);
 
           request.setAttribute("orderDetails", order);
@@ -88,7 +91,7 @@ public class OrderStatus extends HttpServlet {
 
           request.setAttribute("message", "Order does not exist");
 
-          LOGGER.info(" Order " + orderId + " does not exist ");
+          LOGGER.info("Order " + orderId + " does not exist");
 
           getServletContext().getRequestDispatcher("/error.jsp").forward(request, response);
         }
