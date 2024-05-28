@@ -79,7 +79,8 @@ public class OrderProcessor extends HttpServlet {
     try {
       // read from file, convert it to user class
       Order order = deserializer.readValue(request.getReader(), Order.class);
-      out.println(order);
+      response.setContentType("application/json");
+      out.println(serializer.writeValueAsString(order));
     } catch (JsonGenerationException e) {
       e.printStackTrace();
     } catch (JsonMappingException e) {
@@ -96,3 +97,4 @@ public class OrderProcessor extends HttpServlet {
   }
 
 }
+
