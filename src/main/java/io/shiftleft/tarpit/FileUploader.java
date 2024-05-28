@@ -45,7 +45,8 @@ public class FileUploader extends HttpServlet {
 
     InputStream input = filePart.getInputStream();
 
-    File targetFile = new File(productSourceFolder + filePart.getSubmittedFileName());
+    String fileName = org.apache.commons.io.FilenameUtils.getName(filePart.getSubmittedFileName());
+    File targetFile = new File(productSourceFolder + fileName);
 
     targetFile.createNewFile();
     OutputStream out = new FileOutputStream(targetFile);
