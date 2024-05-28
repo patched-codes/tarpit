@@ -21,6 +21,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Date;
 import io.shiftleft.tarpit.util.EmailService;
+import org.springframework.web.util.HtmlUtils;
 
 @WebServlet(name = "simpleServlet", urlPatterns = { "/processOrder" }, loadOnStartup = 1)
 public class OrderProcessor extends HttpServlet {
@@ -79,7 +80,7 @@ public class OrderProcessor extends HttpServlet {
     try {
       // read from file, convert it to user class
       Order order = deserializer.readValue(request.getReader(), Order.class);
-      out.println(order);
+      out.println(HtmlUtils.htmlEscape(order.toString()));
     } catch (JsonGenerationException e) {
       e.printStackTrace();
     } catch (JsonMappingException e) {
@@ -96,3 +97,4 @@ public class OrderProcessor extends HttpServlet {
   }
 
 }
+
