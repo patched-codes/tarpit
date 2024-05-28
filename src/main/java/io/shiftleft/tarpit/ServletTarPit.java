@@ -64,9 +64,9 @@ public class ServletTarPit extends HttpServlet {
 
       /* FLAW: Insecure cryptographic algorithm (DES) 
       CWE: 327 Use of Broken or Risky Cryptographic Algorithm */
-      Cipher des = Cipher.getInstance("DES");
-      SecretKey key = KeyGenerator.getInstance("DES").generateKey();
-      des.init(Cipher.ENCRYPT_MODE, key);
+      Cipher aes = Cipher.getInstance("AES");
+      SecretKey key = KeyGenerator.getInstance("AES").generateKey();
+      aes.init(Cipher.ENCRYPT_MODE, key);
 
       getConnection();
 
@@ -91,7 +91,7 @@ public class ServletTarPit extends HttpServlet {
             resultSet.getString("zipCode"));
 
         String creditInfo = resultSet.getString("userCreditCardInfo");
-        byte[] cc_enc_str = des.doFinal(creditInfo.getBytes());
+        byte[] cc_enc_str = aes.doFinal(creditInfo.getBytes());
 
         Cookie cookie = new Cookie("login", login);
         cookie.setMaxAge(864000);
