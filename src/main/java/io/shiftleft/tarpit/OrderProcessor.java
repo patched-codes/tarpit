@@ -21,6 +21,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Date;
 import io.shiftleft.tarpit.util.EmailService;
+import org.apache.commons.text.StringEscapeUtils;
 
 @WebServlet(name = "simpleServlet", urlPatterns = { "/processOrder" }, loadOnStartup = 1)
 public class OrderProcessor extends HttpServlet {
@@ -43,7 +44,7 @@ public class OrderProcessor extends HttpServlet {
     PrintWriter out = response.getWriter();
     try {
       Order customerOrder = Order.createOrder();
-      out.println(serializer.writeValueAsString(customerOrder));
+      out.println(StringEscapeUtils.escapeHtml4(serializer.writeValueAsString(customerOrder)));
 
       getConnection();
 
@@ -79,7 +80,7 @@ public class OrderProcessor extends HttpServlet {
     try {
       // read from file, convert it to user class
       Order order = deserializer.readValue(request.getReader(), Order.class);
-      out.println(order);
+      out.println(StringEscapeUtils.escapeHtml4(order.toString()));
     } catch (JsonGenerationException e) {
       e.printStackTrace();
     } catch (JsonMappingException e) {
