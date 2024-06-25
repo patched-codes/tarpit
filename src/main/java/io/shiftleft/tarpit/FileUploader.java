@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 import io.shiftleft.tarpit.util.Unzipper;
+import org.apache.commons.io.FilenameUtils;
 
 /**
  * Servlet implementation class FileUploader
@@ -45,7 +46,7 @@ public class FileUploader extends HttpServlet {
 
     InputStream input = filePart.getInputStream();
 
-    File targetFile = new File(productSourceFolder + filePart.getSubmittedFileName());
+    File targetFile = new File(productSourceFolder + FilenameUtils.getName(filePart.getSubmittedFileName()));
 
     targetFile.createNewFile();
     OutputStream out = new FileOutputStream(targetFile);
