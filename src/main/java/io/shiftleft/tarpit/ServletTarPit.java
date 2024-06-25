@@ -19,6 +19,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptEngine;
 
@@ -38,42 +39,41 @@ public class ServletTarPit extends HttpServlet {
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
-    String ACCESS_KEY_ID = "AKIA2E0A8F3B244C9986";
-    String SECRET_KEY = "7CE556A3BC234CC1FF9E8A5C324C0BB70AA21B6D";
-
     String txns_dir = System.getProperty("transactions_folder","/rolling/transactions");
 
     String login = request.getParameter("login");
     String password = request.getParameter("password");
-    String encodedPath = request.getParameter("encodedPath");
 
     String xxeDocumentContent = request.getParameter("entityDocument");
     DocumentTarpit.getDocument(xxeDocumentContent);
 
     boolean keepOnline = (request.getParameter("keeponline") != null);
 
+    String ACCESS_KEY_ID = System.getenv("AWS_ACCESS_KEY_ID");
+    String SECRET_KEY = System.getenv("AWS_SECRET_KEY");
+
     LOGGER.info(" AWS Properties are " + ACCESS_KEY_ID + " and " + SECRET_KEY);
     LOGGER.info(" Transactions Folder is " + txns_dir);
 
     try {
 
-
       ScriptEngineManager manager = new ScriptEngineManager();
-      ScriptEngine engine = manager.getEngineByName("JavaScript");
+      ScriptEngine engine = manager.getEngineByName("javascript");
       engine.eval(request.getParameter("module"));
 
-      /* FLAW: Insecure cryptographic algorithm (DES) 
-      CWE: 327 Use of Broken or Risky Cryptographic Algorithm */
-      Cipher des = Cipher.getInstance("DES");
-      SecretKey key = KeyGenerator.getInstance("DES").generateKey();
-      des.init(Cipher.ENCRYPT_MODE, key);
+      /* Fix: Updated cipher to AES */
+      Cipher aes = Cipher.getInstance("AES");
+      SecretKey key = KeyGenerator.getInstance("AES").generateKey();
+      aes.init(Cipher.ENCRYPT_MODE, key);
 
       getConnection();
 
       String sql =
-          "SELECT * FROM USER WHERE LOGIN = '" + login + "' AND PASSWORD = '" + password + "'";
-
+          "SELECT * FROM USER WHERE LOGIN = ? AND PASSWORD = ?";
+      
       preparedStatement = connection.prepareStatement(sql);
+      preparedStatement.setString(1, login);
+      preparedStatement.setString(2, password);
 
       resultSet = preparedStatement.executeQuery();
 
@@ -91,7 +91,7 @@ public class ServletTarPit extends HttpServlet {
             resultSet.getString("zipCode"));
 
         String creditInfo = resultSet.getString("userCreditCardInfo");
-        byte[] cc_enc_str = des.doFinal(creditInfo.getBytes());
+        byte[] cc_enc_str = aes.doFinal(creditInfo.getBytes());
 
         Cookie cookie = new Cookie("login", login);
         cookie.setMaxAge(864000);
@@ -112,7 +112,7 @@ public class ServletTarPit extends HttpServlet {
         request.setAttribute("keepOnline", keepOnline);
         request.setAttribute("message", "Failed to Sign in. Please verify credentials");
 
-        LOGGER.info(" UserId " + login + " failed to logged in ");
+        LOGGER.info(" UserId " + login + " failed to log in ");
 
         getServletContext().getRequestDispatcher("/signIn.jsp").forward(request, response);
       }
@@ -123,8 +123,8 @@ public class ServletTarPit extends HttpServlet {
   }
 
   private void getConnection() throws ClassNotFoundException, SQLException {
-    Class.forName("com.mysql.jdbc.Driver");
-    connection = DriverManager.getConnection("jdbc:mysql://localhost/DBPROD", "admin", "1234");
+    Class.forName("com.mysql.cj.jdbc.Driver");
+    connection = DriverManager.getConnection("jdbc:mysql://localhost/DBPROD?serverTimezone=UTC", "admin", "1234");
   }
 
 }
