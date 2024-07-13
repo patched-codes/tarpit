@@ -4,8 +4,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 
+import javax.faces.application.FacesMessage;
+import javax.faces.context.FacesContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
@@ -49,22 +50,19 @@ public class FileUploader extends HttpServlet {
     File targetFile = new File(productSourceFolder + FilenameUtils.getName(filePart.getSubmittedFileName()));
 
     targetFile.createNewFile();
-    OutputStream out = new FileOutputStream(targetFile);
 
+    FileOutputStream outputStream = new FileOutputStream(targetFile);
     byte[] buffer = new byte[1024];
     int bytesRead;
 
     while ((bytesRead = input.read(buffer)) != -1) {
-      out.write(buffer, 0, bytesRead);
+      outputStream.write(buffer, 0, bytesRead);
     }
-
-    input.close();
-    out.flush();
-    out.close();
 
     Unzipper.unzipFile(targetFile.getAbsolutePath(), productDestinationFolder);
 
-    doGet(request, response);
+    FacesMessage message = new FacesMessage("Success! File uploaded and unzipped.");
+    FacesContext.getCurrentInstance().addMessage(null, message);
   }
 
 }
