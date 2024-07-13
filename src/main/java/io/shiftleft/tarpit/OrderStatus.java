@@ -77,6 +77,8 @@ public class OrderStatus extends HttpServlet {
           Cookie cookie = new Cookie("order", orderId);
           cookie.setMaxAge(864000);
           cookie.setPath("/");
+          cookie.setHttpOnly(true); // Set HttpOnly flag
+          cookie.setSecure(true);  // Set Secure flag
           response.addCookie(cookie);
 
           request.setAttribute("orderDetails", order);
@@ -112,4 +114,3 @@ public class OrderStatus extends HttpServlet {
   }
 
 }
-
