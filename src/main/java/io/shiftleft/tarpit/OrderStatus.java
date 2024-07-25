@@ -10,9 +10,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.logging.Logger;
-import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.Cookie;
@@ -52,8 +49,9 @@ public class OrderStatus extends HttpServlet {
 
         getConnection();
 
-        String sql = "SELECT * FROM ORDER WHERE ORDERID = '" + orderId;
+        String sql = "SELECT * FROM ORDER WHERE ORDERID = ?";
         preparedStatement = connection.prepareStatement(sql);
+        preparedStatement.setString(1, orderId);
 
         resultSet = preparedStatement.executeQuery();
 
@@ -76,6 +74,9 @@ public class OrderStatus extends HttpServlet {
           Cookie cookie = new Cookie("order", orderId);
           cookie.setMaxAge(864000);
           cookie.setPath("/");
+          cookie.setSecure(true); // Set Secure flag to true
+          cookie.setHttpOnly(true); // Set HttpOnly directive
+          cookie.setSameSite("Strict"); // Set SameSite directive
           response.addCookie(cookie);
 
           request.setAttribute("orderDetails", order);

@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Paths;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -23,47 +24,55 @@ import io.shiftleft.tarpit.util.Unzipper;
 @MultipartConfig
 public class FileUploader extends HttpServlet {
 
-  private static final long serialVersionUID = 1L;
-  private static String productSourceFolder = System.getenv("PRODUCT_SRC_FOLDER");
-  private static String productDestinationFolder = System.getenv("PRODUCT_DST_FOLDER");
+    private static final long serialVersionUID = 1L;
+    private static String productSourceFolder = System.getenv("PRODUCT_SRC_FOLDER");
+    private static String productDestinationFolder = System.getenv("PRODUCT_DST_FOLDER");
 
-  /**
-   * @see HttpServlet#HttpServlet()
-   */
-  public FileUploader() {
-    super();
-  }
-
-
-  /**
-   * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
-   */
-  protected void doPost(HttpServletRequest request, HttpServletResponse response)
-      throws ServletException, IOException {
-
-    Part filePart = request.getPart("zipFile");
-
-    InputStream input = filePart.getInputStream();
-
-    File targetFile = new File(productSourceFolder + filePart.getSubmittedFileName());
-
-    targetFile.createNewFile();
-    OutputStream out = new FileOutputStream(targetFile);
-
-    byte[] buffer = new byte[1024];
-    int bytesRead;
-
-    while ((bytesRead = input.read(buffer)) != -1) {
-      out.write(buffer, 0, bytesRead);
+    /**
+     * @see HttpServlet#HttpServlet()
+     */
+    public FileUploader() {
+        super();
     }
 
-    input.close();
-    out.flush();
-    out.close();
+    /**
+     * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
+     */
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
 
-    Unzipper.unzipFile(targetFile.getAbsolutePath(), productDestinationFolder);
+        Part filePart = request.getPart("zipFile");
 
-    doGet(request, response);
-  }
+        InputStream input = filePart.getInputStream();
+        
+        String fileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
+        
+        if (!isFileNameAllowed(fileName)) {
+            throw new SecurityException("Invalid file name");
+        }
 
+        File targetFile = new File(productSourceFolder + fileName);
+
+        targetFile.createNewFile();
+        OutputStream out = new FileOutputStream(targetFile);
+
+        byte[] buffer = new byte[1024];
+        int bytesRead;
+
+        while ((bytesRead = input.read(buffer)) != -1) {
+            out.write(buffer, 0, bytesRead);
+        }
+
+        input.close();
+        out.flush();
+        out.close();
+
+        Unzipper.unzipFile(targetFile.getAbsolutePath(), productDestinationFolder);
+
+        doGet(request, response);
+    }
+
+    private boolean isFileNameAllowed(String fileName) {
+        return fileName.matches("[a-zA-Z0-9._-]+");
+    }
 }
