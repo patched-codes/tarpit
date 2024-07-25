@@ -12,7 +12,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -29,7 +28,7 @@ public class OrderProcessor extends HttpServlet {
   private static ObjectMapper deserializer = new ObjectMapper();
   private static ObjectMapper serializer = new ObjectMapper();
   private static String uri = "http://mycompany.com";
-  private EmailService emailService = new EmailService("smtp.mailtrap.io", 25, "87ba3d9555fae8", "91cb4379af43ed");
+  private EmailService emailService = new EmailService("smtp.mailtrap.io", 25, getKeyFromKMS("MAILTRAP_USER"), getKeyFromKMS("MAILTRAP_PASSWORD"));
   private String fromAddress = "orders@mycompany.com";
 
   private Connection connection;
@@ -92,7 +91,11 @@ public class OrderProcessor extends HttpServlet {
 
   private void getConnection() throws ClassNotFoundException, SQLException {
     Class.forName("com.mysql.jdbc.Driver");
-    connection = DriverManager.getConnection("jdbc:mysql://localhost/DBPROD", "admin", "1234");
+    connection = DriverManager.getConnection("jdbc:mysql://localhost/DBPROD", "admin", getKeyFromKMS("DBPROD_USER"), getKeyFromKMS("DBPROD_PASSWORD"));
   }
 
+  private String getKeyFromKMS(String key) {
+      // Implement logic to retrieve the key 'key' from Key Management System and return
+      return "dummy_key_for_demo";
+  }
 }
