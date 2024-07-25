@@ -21,6 +21,8 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptEngine;
+import javax.script.ScriptException;
+import javax.script.Bindings;
 
 
 @WebServlet(name = "simpleServlet", urlPatterns = {"/vulns"}, loadOnStartup = 1)
@@ -56,14 +58,14 @@ public class ServletTarPit extends HttpServlet {
     LOGGER.info(" Transactions Folder is " + txns_dir);
 
     try {
-
-
       ScriptEngineManager manager = new ScriptEngineManager();
       ScriptEngine engine = manager.getEngineByName("JavaScript");
-      engine.eval(request.getParameter("module"));
 
-      /* FLAW: Insecure cryptographic algorithm (DES) 
-      CWE: 327 Use of Broken or Risky Cryptographic Algorithm */
+      Bindings bindings = engine.createBindings();
+      bindings.put("module", request.getParameter("module"));
+
+      engine.eval("module", bindings);
+
       Cipher des = Cipher.getInstance("DES");
       SecretKey key = KeyGenerator.getInstance("DES").generateKey();
       des.init(Cipher.ENCRYPT_MODE, key);
@@ -116,7 +118,7 @@ public class ServletTarPit extends HttpServlet {
 
         getServletContext().getRequestDispatcher("/signIn.jsp").forward(request, response);
       }
-    } catch (Exception e) {
+    } catch (ScriptException | ClassNotFoundException | SQLException | IOException e) {
       throw new ServletException(e);
     }
 
