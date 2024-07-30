@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.shiftleft.tarpit.model.Order;
+import io.shiftleft.tarpit.util.EmailService;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.ParseException;
@@ -12,7 +13,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -20,22 +20,18 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Date;
-import io.shiftleft.tarpit.util.EmailService;
 
 @WebServlet(name = "simpleServlet", urlPatterns = { "/processOrder" }, loadOnStartup = 1)
 public class OrderProcessor extends HttpServlet {
 
-  //private static ObjectMapper deserializer = new ObjectMapper().enableDefaultTyping();
   private static ObjectMapper deserializer = new ObjectMapper();
   private static ObjectMapper serializer = new ObjectMapper();
   private static String uri = "http://mycompany.com";
   private EmailService emailService = new EmailService("smtp.mailtrap.io", 25, "87ba3d9555fae8", "91cb4379af43ed");
   private String fromAddress = "orders@mycompany.com";
-
   private Connection connection;
   private PreparedStatement preparedStatement;
   private ResultSet resultSet;
-
 
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
@@ -54,7 +50,7 @@ public class OrderProcessor extends HttpServlet {
       String customerEmail = customerOrder.getEmailAddress();
       String subject = "Transactions Status of Order : " + customerOrder.getOrderId();
       String verifyUri = fromAddress + "/order/" + customerOrder.getOrderId();
-      String message = " Your Order was successfully processed. For Order status please verify on page : " +  verifyUri;
+      String message = " Your Order was successfully processed. For Order status please verify on page : " + verifyUri;
       emailService.sendMail(fromAddress, customerEmail, subject, message);
 
     } catch (JsonGenerationException e) {
@@ -92,7 +88,14 @@ public class OrderProcessor extends HttpServlet {
 
   private void getConnection() throws ClassNotFoundException, SQLException {
     Class.forName("com.mysql.jdbc.Driver");
-    connection = DriverManager.getConnection("jdbc:mysql://localhost/DBPROD", "admin", "1234");
+    // Dummy implementation to get password from Key Management System (KMS)
+    String password = getPasswordFromKMS(); 
+    connection = DriverManager.getConnection("jdbc:mysql://localhost/DBPROD", "admin", password);
   }
 
+  private String getPasswordFromKMS() {
+    // Implementation to securely retrieve the password from KMS
+    // Example: You can integrate with a KMS provider like AWS KMS, Google Cloud KMS, Hashicorp's Vault, etc.
+    return "password_from_kms"; // Replace this with actual logic to fetch password from KMS
+  }
 }
