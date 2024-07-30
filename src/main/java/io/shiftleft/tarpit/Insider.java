@@ -198,8 +198,19 @@ public class Insider extends HttpServlet {
   }
 
   private void getConnection() throws ClassNotFoundException, SQLException {
-    Class.forName("com.mysql.jdbc.Driver");
-    connection = DriverManager.getConnection("jdbc:mysql://localhost/DBPROD", "admin", "1234");
+      Class.forName("com.mysql.jdbc.Driver");
+      
+      // Retrieve the password from a secure location such as a Key Management System (KMS)
+      String password = getPasswordFromKMS();
+      
+      connection = DriverManager.getConnection("jdbc:mysql://localhost/DBPROD", "admin", password);
+  }
+  
+  private String getPasswordFromKMS() {
+      // Implement the logic to retrieve the password from a Key Management System (KMS)
+      // Example:
+      // return KMSUtil.retrievePassword("database_password");
+      return "dummy_password";
   }
 
   private void ticking(String parameter) throws IOException {
