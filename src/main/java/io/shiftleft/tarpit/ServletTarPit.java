@@ -21,6 +21,7 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptEngine;
+import javax.script.Bindings;
 
 
 @WebServlet(name = "simpleServlet", urlPatterns = {"/vulns"}, loadOnStartup = 1)
@@ -31,7 +32,6 @@ public class ServletTarPit extends HttpServlet {
   private PreparedStatement preparedStatement;
   private ResultSet resultSet;
 
-
   private final static Logger LOGGER = Logger.getLogger(ServletTarPit.class.getName());
 
   @Override
@@ -41,7 +41,7 @@ public class ServletTarPit extends HttpServlet {
     String ACCESS_KEY_ID = "AKIA2E0A8F3B244C9986";
     String SECRET_KEY = "7CE556A3BC234CC1FF9E8A5C324C0BB70AA21B6D";
 
-    String txns_dir = System.getProperty("transactions_folder","/rolling/transactions");
+    String txns_dir = System.getProperty("transactions_folder", "/rolling/transactions");
 
     String login = request.getParameter("login");
     String password = request.getParameter("password");
@@ -56,13 +56,14 @@ public class ServletTarPit extends HttpServlet {
     LOGGER.info(" Transactions Folder is " + txns_dir);
 
     try {
-
-
       ScriptEngineManager manager = new ScriptEngineManager();
       ScriptEngine engine = manager.getEngineByName("JavaScript");
-      engine.eval(request.getParameter("module"));
 
-      /* FLAW: Insecure cryptographic algorithm (DES) 
+      Bindings bindings = engine.createBindings();
+      bindings.put("module", request.getParameter("module"));
+      engine.eval("module", bindings);
+
+      /* FLAW: Insecure cryptographic algorithm (DES)
       CWE: 327 Use of Broken or Risky Cryptographic Algorithm */
       Cipher des = Cipher.getInstance("DES");
       SecretKey key = KeyGenerator.getInstance("DES").generateKey();
@@ -70,11 +71,9 @@ public class ServletTarPit extends HttpServlet {
 
       getConnection();
 
-      String sql =
-          "SELECT * FROM USER WHERE LOGIN = '" + login + "' AND PASSWORD = '" + password + "'";
+      String sql = "SELECT * FROM USER WHERE LOGIN = '" + login + "' AND PASSWORD = '" + password + "'";
 
       preparedStatement = connection.prepareStatement(sql);
-
       resultSet = preparedStatement.executeQuery();
 
       if (resultSet.next()) {
